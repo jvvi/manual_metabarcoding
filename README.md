@@ -15,7 +15,7 @@ conda deactivate
 ```
 
 Luego, ejecuta el script de Anacapa para realizar el primer paso, que incluye la limpieza de datos y la identificación de ASVs:
-Este script limpia los datos usando DADA2 y genera una tabla de ASVs.
+Este script limpia los datos usando cutadapt, fast-toolkit y DADA2. Además con DADA2 se genera una tabla de ASVs.
 Asegúrate de reemplazar las rutas de los archivos con las que correspondan en tu sistema.
 
 ```bash
