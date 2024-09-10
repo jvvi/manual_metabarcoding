@@ -6,7 +6,7 @@ Al activarse correctamente el ambiente de conda, el nombre del ambiente aparecer
 Por ejemplo: (python2-env) user@nombre_computador:~$
 
 ```bash
-conda activate python2-envpython2-env
+conda activate python2-env
 ```
 
 Luego, ejecuta el script de Anacapa para realizar el primer paso, que incluye la limpieza de datos y la identificación de ASVs:
