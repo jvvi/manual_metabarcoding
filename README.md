@@ -13,6 +13,11 @@ Para desactivar el ambiente de conda
 ```bash
 conda deactivate
 ```
+Crea un directorio para guardar todos los archivos de salida de Anacapa toolkit 
+
+```bash
+mkdir out_anacapa
+```
 
 Luego, ejecuta el script de Anacapa para realizar el primer paso, que incluye la limpieza de datos y la identificación de ASVs:
 Este script limpia los datos usando cutadapt, fast-toolkit y DADA2. Además con DADA2 se genera una tabla de ASVs.
