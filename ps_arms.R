@@ -14,27 +14,6 @@ df <- df %>%
 mutate(factor =  paste(site, ocean_depth, sep = "_")) %>%
 mutate(factor_r =  paste(site, ocean_depth, replica, sep = "_"))
 
-##table insect###
-#load("insect/longDF_table.RData")
-#tax_2 <- aggregate(longDF[3:12], longDF["taxID"], head, 1)
-#tax_2<- tax_2 %>% 
-#  dplyr::select(1,5:11) %>%
-#  rename(CO1_seq_number = taxID, Kingdom = kingdom, Phylum = phylum, Class= class, Order= order, 
-#                        Family = family, Genus = genus, Specie = species)
-#tax_2 <- tax_2 %>%
-#  mutate_all(~ ifelse(. %in% c("Metazoa", "Viridiplantae"), "Eukarya", .))
-
-#asv_2 <- aggregate(longDF[13:ncol(longDF)], longDF["taxID"], sum)
-#colnames(asv_2) <- gsub("-", ".", colnames(asv_2))
-#asv_2 <- rename(asv_2, CO1_seq_number = taxID)
-#
-##merge 
-#setdiff(colnames(asv_1), colnames(asv_2))
-#intersect(colnames(tax_1), colnames(tax_2))
-#asv <- merge(x = asv_1, y = asv_2, all = TRUE)
-#tax <- merge(x = tax_1, y = tax_2, all = TRUE)
-#rownames(asv) <- asv$CO1_seq_number; asv <- asv[,-1]
-#rownames(tax) <- tax$CO1_seq_number; tax <- tax[,-1]
 
 #####create object phylseq#####
 otu_ps <- otu(asv_1)
