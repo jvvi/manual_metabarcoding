@@ -8,6 +8,11 @@ Por ejemplo: (python2-env) user@nombre_computador:~$
 ```bash
 conda activate python2-env
 ```
+Para desactivar el ambiente de conda
+
+```bash
+conda deactivate
+```
 
 Luego, ejecuta el script de Anacapa para realizar el primer paso, que incluye la limpieza de datos y la identificación de ASVs:
 Este script limpia los datos usando DADA2 y genera una tabla de ASVs.
