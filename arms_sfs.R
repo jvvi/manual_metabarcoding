@@ -1,4 +1,4 @@
-###
+# MERGE fraction sample ---------------------
 ps_sfs <- merge_samples(ps, group = "factor_r")
 df_sfs <- data.frame(sample_data(ps_sfs))
 df_sfs <- df_sfs  %>%
@@ -17,17 +17,9 @@ ps_sfs <- clean_zero_reads(ps_sfs, "Specie")
 
 
 #RAREFY--------------------------------------
-##rarefy-------------------------------------
 sample_sums <- sample_sums(ps_sfs) #nolint
 which.min(sample_sums)
 r_ps_sfs <- rarefaction(ps_sfs)
-
-#
-asv_transpuesta <- t(data.frame(otu_table(ps_sfs))) #cambiar filas por columnas, ahora asv en col y sample in rows
-plot_curve_r <- rarecurve(asv_transpuesta, step = 100, cex = .5, las = .2,
-                          xlab = "Number of reads",
-                          ylab = "Number of OTU observed")
-
 
 ##CURVAS DE RAREFACCION--------------------------------
 
@@ -142,7 +134,6 @@ r_ps_sfs %>%
   #subset_samples(., factor == "Algarrobo_30m") %>%
   ntaxa()
 
-
 ##contar numero de asv por phylum-----------
 count_asv_phylum <- list()
 
@@ -181,17 +172,6 @@ phylum_colors <- c("Annelida" = "#9467bd",# Lavanda
                    "Rotifera" = "#e377c2", 
                    "Chordata" = "#8c564b",
                    "Unassigned" = "#7f7f7f")  # Gris
-##intendo 10000
-percentages <- transform_sample_counts(r_ps_oc, function(x) x / sum(x) )
-percentages_glom <- tax_glom(percentages, taxrank = 'Phylum')
-percentages_df <- psmelt(percentages_glom)
-percentages_df$Phylum <- as.factor(percentages_df$Phylum)
-
-relative_plot <- ggplot(data=percentages_df, aes(x=Sample, y=Abundance, fill=Phylum))+ 
-  geom_bar(aes(), stat="identity", position="stack")+
-   scale_fill_manual(values = phylum_colors)
-relative_plot                           
-
 
 ###BAR PLOT ABSOLUTE RELATIVE#
 taxonomic_level <- "Phylum"
@@ -239,49 +219,8 @@ bar_plot
 
 #PRESENCIA Y AUSENCIA-----------
 r_ps_oc_pa <- normalize_pa_ps(r_ps_oc)
-r_ps_oc_pa_know <- normalize_pa_ps(r_ps_sfs_know)
-
-##Abundancia por Phylum PA----------
-Phyfrac <- as.character(tax_table(r_ps_oc_pa_know)[, "Phylum"])
-Phyfrac <- factor(Phyfrac)
-
-OTUtab_a_unique = apply(otu_table(r_ps_oc_pa_know), MARGIN = 1, function(x) {
-  tapply(x, INDEX = Phyfrac, FUN = sum, na.rm = F, simplify = TRUE)
-})
-
-OTUtab_a_unique<- as.data.frame(as.table(OTUtab_a_unique))
-OTUtab_a_unique <- OTUtab_a_unique %>%
-  dplyr::rename(Phylum = Var1) %>%
-  mutate(site = rep(c("Algarrobo", "Las_Cruces"), each = 88), 
-  ocean_depth = rep(c("30m", "60m", "30m", "60m"),each = 44)) 
-
-
-bar_plot_pa <- ggplot(OTUtab_a_unique) +
-  geom_col(mapping = aes(
-    x = as.factor(ocean_depth),
-    y = Freq,
-    fill = Phylum),
-    position = "fill") +
-  theme_bw() +
-  labs(x = "Ocean Depth (m)", y = "Proportion of Community", fill = "Phyla") +
-  facet_grid(~ site, 
-             labeller = as_labeller(c(`Algarrobo` = "Algarrobo", 
-                                      `Las_Cruces` = "Las Cruces"))) +
-  theme(axis.text.x = element_text(size= 9, angle = 0, vjust = 0.5, hjust = 0.5), 
-        strip.text.x = element_text(size = 12),  # Tamaño del texto en el eje x
-        strip.text.y = element_text(size = 12),  # Tamaño del texto en el eje y
-        axis.title = element_text(size = 13),   # Tamaño de las etiquetas del eje X
-        axis.text.y = element_text(size = 9),  # Tamaño de las etiquetas del eje Y
-        legend.title = element_text(size = 11),  # Tamaño del título de la leyenda
-        legend.text = element_text(size = 9.5)) +
-  scale_fill_manual(values = phylum_colors) +
-  guides(fill = guide_legend(override.aes = list(size = 5.5)))
-bar_plot_pa
-#ggsave("Plot_papper/bar_plot_pa_asv.png", bar_plot_pa, width = 5, height = 5)
-
 
 #ALPHA DIVERSITy-----------------
-
 #data frame con diversity
 r_df_sfs <- data.frame(sample_data(r_ps_oc))
 data_r_otu_sfs <- t(data.frame(otu_table(r_ps_oc)))
@@ -336,62 +275,6 @@ plot_div <-  D1 + D2 + D3 + D4 +
   guides(fill = guide_legend(override.aes = list(size = 5)))# Ajustar el tamaño de los símbolos
 plot_div
 #ggsave("Plot_papper/alpha_div.png", plot_div, width = 10, height = 8)
-
-
-##alpha div pa-------
-df_r <- data.frame(sample_data(r_ps_oc_pa))
-data_r_otu <- t(data.frame(otu_table(r_ps_oc_pa)))
-data_r_richness <- estimateR(data_r_otu)
-S.evenness <- diversity(data_r_otu) / log(specnumber(data_r_otu)) # calculate evenness index using vegan package
-S.shannon <- diversity(data_r_otu, index = "shannon") # calculate Shannon index using vegan package
-sfs_alphadiv_pa <- cbind(df_r, t(data_r_richness), S.shannon, S.evenness) # combine all indices in one data table
-rm(df_r, data_r_otu, data_r_richness, S.evenness, S.shannon)
-
-D1 <- ggplot(sfs_alphadiv_pa, aes(x = site, y = S.obs, fill =ocean_depth)) +
-  geom_boxplot() +
-  labs(title = 'Richness', y = "Alpha Diversity", x =NULL, fill = "Depth",  tag = "A") +
-  scale_fill_manual(
-    values = c("30m" = "#17becf", "60m" = "#e46385")) +
-  scale_x_discrete(labels = c("Algarrobo" = "Algarrobo", "Las_Cruces" = "Las Cruces")) +
-  theme_bw()
-D2 <- ggplot(sfs_alphadiv_pa, aes(x=site, y=S.chao1, fill =ocean_depth)) +
-  geom_boxplot() +
-  labs(title = 'Chao1', y = NULL, x =NULL, fill = "Depth",  tag = "B") +
-  scale_fill_manual(
-    values = c("30m" = "#17becf", "60m" = "#e46385")) +
-  scale_x_discrete(labels = c("Algarrobo" = "Algarrobo", "Las_Cruces" = "Las Cruces")) +
-  theme_bw()
-D3 <- ggplot(sfs_alphadiv_pa, aes(x=site, y=S.evenness, fill =ocean_depth)) +
-  geom_boxplot() +
-  labs(title = 'Evenness', y = "Alpha Diversity", x ="Site", fill = "Depth",  tag = "C") +
-  scale_fill_manual(
-    values = c("30m" = "#17becf", "60m" = "#e46385")) +
-  scale_x_discrete(labels = c("Algarrobo" = "Algarrobo", "Las_Cruces" = "Las Cruces")) +
-  theme_bw()
-D4 <- ggplot(sfs_alphadiv_pa, aes(x=site, y=S.shannon, fill =ocean_depth)) +
-  geom_boxplot() +
-  labs(title = 'Shannon', y = NULL, x ="Site", fill = "Depth", tag = "D") +
-  scale_fill_manual(
-    values = c("30m" = "#17becf", "60m" = "#e46385")) +
-  scale_x_discrete(labels = c("Algarrobo" = "Algarrobo", "Las_Cruces" = "Las Cruces")) +
-  theme_bw()
-
-plot_div <-  D1 + D2 + D3 + D4 +
-  plot_layout(guides = 'collect', axis_titles = "collect") &
-  labs(y = "Alpha diversity", tag = "") & theme(
-    plot.title = element_text(size = 24, hjust = 0.5, vjust = 0.5),  # Tamaño del título general
-    axis.title = element_text(size = 22),  # Tamaño de los títulos de los ejes
-    legend.title = element_text(size = 23), # Tamaño del título de la leyenda
-    legend.text = element_text(size = 17),
-    legend.key.size = unit(2, "lines"),
-    axis.text.x = element_text(size = 17),   # Tamaño de las etiquetas del eje X
-    axis.text.y = element_text(size = 17),
-    axis.title.y = element_text(margin = margin(r = 5)) # Aumenta el margen derecho del título del eje Y
-    
-  ) & 
-  guides(fill = guide_legend(override.aes = list(size = 5)))# Ajustar el tamaño de los símbolos
-plot_div
-#ggsave("Plot_papper/alpha_div_pa.png", plot_div, width = 10, height = 8)
 
 
 #GLM------------
@@ -469,8 +352,6 @@ if (skewness(sfs_alphadiv$S.chao1) > 1) {
                    family = gaussian(link = "identity"), data = sfs_alphadiv)
 }
 
-
-
 summary(glm_shannon)
 summary(glm_evenness)
 summary(glm_richness)
@@ -482,12 +363,6 @@ summary(mod_glmm)
 #NMSD--------------------
 #ordination
 set.seed(1)
-all_nmds <- ordinate(
-  physeq = r_ps_oc,
-  method = "NMDS",
-  distance = "bray"
-)
-
 all_nmds_pa <- ordinate(
   physeq = r_ps_oc_pa,
   method = "NMDS",
@@ -495,16 +370,8 @@ all_nmds_pa <- ordinate(
 )
 
 #pasar resultados a un data frame 
-all_nmds_points <- as.data.frame(all_nmds$points)
 all_nmds_points_pa <- as.data.frame(all_nmds_pa$points)
 r_sfs_df <- data.frame(sample_data(r_ps_sfs))
-
-#agregar variables
-all_nmds_df <- all_nmds_points  %>% 
-mutate(site = r_sfs_df$site, 
-       ocean_depth = r_sfs_df$ocean_depth, 
-       type_of_sample = r_sfs_df$type_of_sample, 
-       factor = paste(r_sfs_df$site, r_sfs_df$ocean_depth, sep = "_"))
 
 all_nmds_df_pa <- all_nmds_points_pa  %>% 
 mutate(site = r_sfs_df$site, 
@@ -512,30 +379,7 @@ mutate(site = r_sfs_df$site,
        type_of_sample = r_sfs_df$type_of_sample, 
        factor = paste(r_sfs_df$site, r_sfs_df$ocean_depth, sep = "_"))
 
-##grafico
-nmds_bray <- ggplot(data = all_nmds_df,
-                     aes(x = MDS1,
-                         y = MDS2
-                     )) + 
-  stat_ellipse(type = "norm", linetype = 2,
-               show.legend = FALSE, size = 0.6, alpha = 0.9, aes(color = ocean_depth)) +
-  geom_point(size = 5, aes(shape = site, color = ocean_depth)) +
-  scale_shape_manual(values = c(15, 19), 
-                     labels = c(`Algarrobo` = "Algarrobo", `Las_Cruces` = "Las Cruces")) +
-  scale_color_manual(values = c("#17becf", "#e46385")) +
-  labs(color = "Depth", shape = "Site", x = "nMDS1", y = "nMDS2") +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 17, angle = 0, vjust = 0.5, hjust = 0.5), 
-        axis.title = element_text(size = 19),  # Tamaño de los títulos de los ejes
-        axis.text.y = element_text(size = 17),  # Tamaño de las etiquetas del eje Y 
-        strip.text.x = element_text(size = 15),  # Tamaño del texto en el eje x
-        strip.text.y = element_text(size = 15),  # Tamaño del texto en el eje y
-        legend.title = element_text(size = 17), # Tamaño del título de la leyenda
-        legend.text = element_text(size = 15)) +# Ajustar el ancho de los elementos de la leyenda
-  guides(fill = guide_legend(override.aes = list(size = 16)))
-nmds_bray
-#ggsave("Plot_papper/ndms_bray.png", nmds_bray, width = 7, height = 5)
-
+                          
 #plot jaccard
 nmds_jaccard <- ggplot(data = all_nmds_df_pa,
                     aes(x = MDS1,
@@ -564,145 +408,13 @@ nmds_jaccard
 
 ##PERMANOVA----------------
 #test adonis
-dist_sfs_r <- phyloseq::distance(r_ps_oc, method = "bray")
-test <- adonis2(dist_sfs_r ~ (site + ocean_depth + site * ocean_depth),  data = df_sfs, permutations = 1e3)
-test
 
 df_sfs_pa <- data.frame(sample_data(r_ps_oc_pa))
 dist_sfs_pa <- phyloseq::distance(r_ps_oc_pa, method = "jaccard")
 test_pa <- adonis2(dist_sfs_pa ~ (site + ocean_depth + site * ocean_depth),  data=df_sfs, permutations = 1e3)
 test_pa
 
-#PCoA------------
-#Recordar ver % de ejes y cmabiar manualmente
-temperature <- rep(c(11.84564, 11.45787, 11.91368, 11.45787), each = 4)
-sample_data(r_ps_oc_pa)$temperature <- temperature
-r_sfs_df <- as.data.frame(sample_data(r_ps_oc_pa))
-r_sfs_df$site <- as.factor(r_sfs_df$site)
-r_sfs_df$ocean_depth <- as.factor(r_sfs_df$ocean_depth)
-str(sample_data(r_sfs_df))
-
-all_pcoa_pa <- ordinate(
-  physeq = r_ps_oc_pa, 
-  method = "PCoA", 
-  distance = "jaccard"
-)
-
-all_pca_points_pa <- as.data.frame()
-
-all_pca_df_pa <- all_pca_points_pa  %>% 
-  mutate(site = r_sfs_df$site, 
-         ocean_depth = r_sfs_df$ocean_depth, 
-         type_of_sample = r_sfs_df$type_of_sample, 
-         factor = paste(r_sfs_df$site, r_sfs_df$ocean_depth, sep = "_"))
-
-
-pcoa_bray_pa <- plot_ordination(r_ps_oc_pa, all_pcoa_pa, colour = as.factor("ocean_depth"), shape= as.factor("site")) + 
-  geom_point(size = 3) +
-  stat_ellipse(type = "norm", linetype = 2,
-             show.legend = FALSE, size = 0.6, alpha = 0.9, 
-             aes(group = ocean_depth, color = ocean_depth)) +
-  geom_point(size = 5, aes(shape = site, color = ocean_depth)) +
-  #scale_shape_manual(values = c(15, 19), 
-  #                   labels = c(`Algarrobo` = "Algarrobo", `Las_Cruces` = "Las Cruces")) +
-  #scale_color_manual(values = c("#17becf", "#e46385")) +
-  #labs(color = "Depth", shape = "Site", x = "PCoA1 (20.5%)", y = "PCoA2 (10.8%)") +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 17, angle = 0, vjust = 0.5, hjust = 0.5), 
-        axis.title = element_text(size = 19),  # Tamaño de los títulos de los ejes
-        axis.text.y = element_text(size = 17),  # Tamaño de las etiquetas del eje Y 
-        strip.text.x = element_text(size = 15),  # Tamaño del texto en el eje x
-        strip.text.y = element_text(size = 15),  # Tamaño del texto en el eje y
-        legend.title = element_text(size = 17), # Tamaño del título de la leyenda
-        legend.text = element_text(size = 15)) +# Ajustar el ancho de los elementos de la leyenda
-  guides(fill = guide_legend(override.aes = list(size = 16)))
-pcoa_bray_pa
-#ggsave("Plot_papper/pcoa_jaccard_pa.png", pcoa_bray_pa, width = 7, height = 5)
-
-#agregar temperatura 
-
-# Ajustar la variable de temperatura a la PCoA
-fit_temp <- envfit(pcoa_bc$vectors, df_ps_oc_pa$temperature, permutations = 999)
-
-# Extraer las coordenadas de los vectores (envfit)
-vectors_temp <- as.data.frame(fit_temp$vectors$arrows * sqrt(fit_temp$vectors$r)) # Multiplicar por la raíz cuadrada del R² para ajustar la longitud
-vectors_temp$label <- rownames(vectors_temp) # Añadir etiquetas
-
-pcoa_bray_pa + 
-  geom_segment(data = vectors_temp, aes(x = 0, y = 0, xend = Axis.1, yend = Axis.2), 
-               arrow = arrow(length = unit(0.3, "cm")), color = "blue", size = 1)
-  
-
-geom_text(data = vectors_temp, aes(x = Axis.1, y = Axis.2, label = label), 
-            color = "blue", size = 5, vjust = -1)
-
-#SIMPER------------
-##table
-r_order <- clean_zero_reads(r_ps_oc, "Class")
-r_order_pa <- clean_zero_reads(r_ps_oc_pa, "Class")
-  
-asv_table_r <- t(as.data.frame(otu_table(r_order)))
-asv_table_r_pa <- t(as.data.frame(otu_table(r_order_pa)))
-tax_table_r_pa <- as.data.frame(tax_table(r_order_pa))
-dist_sfs <- vegdist(asv_table_r, method = "bray")
-dist_sfs_pa <- vegdist(asv_table_r_pa, method = "jaccard")
-dist_sfs_nmds <- metaMDS(dist_sfs)
-dist_sfs_pa_nmds <- metaMDS(dist_sfs_pa)
-
-##
-
-simper_ocean <- simper(asv_table_r_pa, df_sfs$ocean_depth )
-simper_ocean$`30m_60m`
-summary(simper_ocean$`30m_60m`)
-simper_ocean_df <- data.frame(
-  ASV = simper_ocean$`30m_60m`$species,
-  avegare = simper_ocean$`30m_60m`$average,
-  sd = simper_ocean$`30m_60m`$sd,
-  ord = simper_ocean$`30m_60m`$ord,
-  p = simper_ocean$`30m_60m`$p
-)
-summary(simper_ocean)
-simper_ocean_df <- merge(simper_ocean_df, tax_table_r_pa, by = "row.names")
-#write.csv(simper_ocean_df, "Plot_papper/simper_ocean_pa_order.csv", row.names = FALSE)
-
-
-simper_site <- simper(asv_table_r_pa, df_sfs$site )
-simper_site$Algarrobo_Las_Cruces
-summary(simper_site$Algarrobo_Las_Cruces)
-simper_site_df <- data.frame(
-  ASV = simper_site$Algarrobo_Las_Cruces$species,
-  avegare = simper_site$Algarrobo_Las_Cruces$average,
-  sd = simper_site$Algarrobo_Las_Cruces$sd,
-  ord = simper_site$Algarrobo_Las_Cruces$ord,
-  p = simper_site$Algarrobo_Las_Cruces$p
-)
-summary(simper_site)
-simper_site_df <- merge(simper_site_df, tax_table_r_pa, by = "row.names")
-#write.csv(simper_site_df, "Plot_papper/simper_site_pa.csv", row.names = FALSE)
-
-
-simper_factor <- simper(asv_table_r_pa, df_sfs$factor )
-simper_factor$Algarrobo_30m_Algarrobo_60m
-summary(simper_factor$Algarrobo_30m_Algarrobo_60m)
-summary(simper_factor$Algarrobo_30m_Las_Cruces_30m)
-summary(simper_factor$Algarrobo_30m_Las_Cruces_60m)
-summary(simper_factor$Algarrobo_60m_Las_Cruces_30m)
-summary(simper_factor$Algarrobo_60m_Las_Cruces_60m)
-summary(simper_factor$Las_Cruces_30m_Las_Cruces_60m)
-
-simper_60m_df <- data.frame(
-  ASV =     simper_factor$Algarrobo_60m_Las_Cruces_60m$species,
-  avegare = simper_factor$Algarrobo_60m_Las_Cruces_60m$average,
-  sd =      simper_factor$Algarrobo_60m_Las_Cruces_60m$sd,
-  ord =     simper_factor$Algarrobo_60m_Las_Cruces_60m$ord,
-  p =       simper_factor$Algarrobo_60m_Las_Cruces_60m$p
-)
-
-summary(simper_factor)
-simper_factor_df <- merge(simper_60m_df, tax_table_r_pa, by = "row.names")
-#write.csv(simper_site_df, "Plot_papper/simper_site_pa.csv", row.names = FALSE)
-
-###-------Turneover y Nestedness-------------
+#Turneover y Nestedness-------------
 # Load necessary packages
 library(phyloseq)
 library(betapart)
@@ -713,8 +425,8 @@ library(grid)
 # Assuming your phyloseq object is called `physeq`
 physeq <- r_ps_oc # replace with your actual phyloseq object
 
-# Merge samples by site
-merged_physeq <- merge_samples(physeq, group = "factor")
+# Merge samples by site and depth
+merged_physeq <- merge_samples(r_ps_oc_pa, group = "factor")
 
 #PA
 physeq_pa <- normalize_pa_ps(merged_physeq)
@@ -750,41 +462,6 @@ nestedness_jaccard[lower.tri(nestedness_jaccard)] <- NA
 
 #heatmap 
 new_labels <- c("AL30", "AL60", "LC30", "LC60")
-
-# Heatmap para turnover_jaccard
-heatmap_turnover  <- pheatmap(turnover_jaccard, cluster_rows = FALSE, cluster_cols = FALSE,
-         display_numbers = TRUE, main = "Turnover",
-         color = colorRampPalette(c("#F4FAFE", "firebrick"))(100), 
-         labels_row = new_labels,  # Etiquetas personalizadas para filas
-         labels_col = new_labels, 
-         angle_col = 0, 
-         legend = FALSE, 
-         fontsize_number = 12, 
-         number_color = "black", 
-         na_col = "white") 
-
-
-# Heatmap para nestedness_jaccard
-heatmap_nestedness<- pheatmap(nestedness_jaccard, cluster_rows = FALSE, cluster_cols = FALSE,
-                              display_numbers = TRUE, main = "Nestedness",
-                              color = colorRampPalette(c("#F4FAFE", "firebrick"))(100), 
-                              labels_row = new_labels,  # Etiquetas personalizadas para filas
-                              labels_col = new_labels, 
-                              angle_col = 0, 
-                              legend = TRUE, 
-                              fontsize_number = 12, 
-                              number_color = "black")
-g1 <- heatmap_turnover[[4]]
-g2 <- heatmap_nestedness[[4]]
-combined_plot <- arrangeGrob(
-  g1, g2,
-  ncol = 2,
-  widths = c(1, 1.05)  # Cambia los números según el ajuste deseado
-)
-
-print(combined_plot)
-#ggsave("Plot_papper/heatmap.png", combined_plot, width = 10, height = 5)  # Ajusta el tamaño según lo necesites
-
  
 # Crear una nueva matriz vacía para almacenar los valores combinados
 combined_matrix <- matrix(NA, nrow = nrow(turnover_jaccard), ncol = ncol(turnover_jaccard))
@@ -813,8 +490,8 @@ heatmap_combined <- pheatmap(combined_matrix,
 
 #ggsave("Plot_papper/heatmap_combined.png", heatmap_combined, width = 10, height = 5)  # Ajusta el tamaño según lo necesites
 
-
-###------------subset por studio------
+#Beta diversity ----------------------------------
+##subset por site and depth------
 r_ps_AL30 <- subset_samples(r_ps_oc, factor == "Algarrobo_30m")
 r_ps_AL60 <- subset_samples(r_ps_oc, factor == "Algarrobo_60m")
 r_ps_LC30 <- subset_samples(r_ps_oc, factor == "Las_Cruces_30m")
@@ -827,7 +504,7 @@ r_ps_LC30 <- clean_zero_reads(r_ps_LC30, taxonomic_level)
 r_ps_LC60 <- clean_zero_reads(r_ps_LC60, taxonomic_level)
 
 
-###---------------Beta diversity-------
+##Beta diversity-------
 library(ggvenn)
 library(ggVennDiagram)
 
@@ -1069,287 +746,3 @@ all_venn_depth
 all_venn_depth <- all_venn_depth + expand_limits(x = c(0, 1), y = c(0, 1))
 all_venn_depth
 #ggsave("Plot_papper/ven_all_depth.png", all_venn_depth, width = 12, height = 6)
-
-
-#Subset de filos mas ricos####
-anelidos <- subset_taxa(r_ps_oc, Phylum == "Annelida")
-artro    <- subset_taxa(r_ps_oc, Phylum == "Arthropoda")
-briozoa  <- subset_taxa(r_ps_oc, Phylum == "Bryozoa")
-cnidaria <- subset_taxa(r_ps_oc, Phylum == "Cnidaria")
-
-anelidos <- clean_zero_reads(anelidos, "Specie")
-artro    <- clean_zero_reads(artro, "Specie")
-briozoa  <- clean_zero_reads(briozoa, "Specie")
-cnidaria <- clean_zero_reads(cnidaria, "Specie")
-
-#Estraer secuencias
-anelidos_sequences <- refseq(anelidos)
-artro_sequences    <- refseq(artro)
-briozoa_sequences    <- refseq(briozoa)
-cnidaria_sequences    <- refseq(cnidaria)
-
-# Guardar las secuencias en un archivo FASTA
-writeXStringSet(anelidos_sequences, filepath = "C:/Users/javie/Documents/Scripts/agua_arms/agua_arms/tree/r_anelidos.fasta")
-writeXStringSet(artro_sequences, filepath = "C:/Users/javie/Documents/Scripts/agua_arms/agua_arms/tree/r_artro.fasta")
-writeXStringSet(briozoa_sequences, filepath = "C:/Users/javie/Documents/Scripts/agua_arms/agua_arms/tree/r_briozoa.fasta")
-writeXStringSet(cnidaria_sequences, filepath = "C:/Users/javie/Documents/Scripts/agua_arms/agua_arms/tree/r_cnidaria.fasta")
-
-
-##alpha div subset
-calculate_alphadiv <- function(ps_subset) {
-  
-  r_df <- (data.frame(sample_data(ps_subset)))
-  ps_otu_t <- t(data.frame(otu_table(ps_subset)))
-  data_r_richness <- estimateR(ps_otu_t)  
-  S.evenness <- diversity(ps_otu_t) / log(specnumber(ps_otu_t))
-  S.shannon <- diversity(ps_otu_t, index = "shannon")
-  r_alphadiv <- cbind(r_df, t(data_r_richness), S.shannon, S.evenness)
-  rm(data_r_richness, S.evenness, S.shannon)
-  
-  return(r_alphadiv)
-  
-}
-
-anelidos_alphadiv <- calculate_alphadiv(anelidos)
-artro_alphadiv    <- calculate_alphadiv(artro)
-bryozoa_alphadiv  <- calculate_alphadiv(briozoa)
-cnidaria_alphadiv <- calculate_alphadiv(cnidaria)
-
-
-graphic_function <- function(data_alphadiv, grupo_tax) {
-  
-  A1 <- ggplot(data_alphadiv, aes(x=ocean_depth, y=S.obs, fill =site)) +
-    geom_boxplot() +
-    labs(title= grupo_tax, x= 'Ocean Depth', y= 'Richness', fill = "Site") +
-    scale_fill_manual(values = c("#e46385", "#17becf"), 
-                      labels = c("Algarrobo", "Las Cruces")) +
-    ylim(c(0,20.5)) +
-    theme_bw()
-  A2 <- ggplot(data_alphadiv, aes(x=ocean_depth, y=S.chao1, fill =site)) +
-    geom_boxplot() +
-    labs(title= NULL, x= 'Ocean Depth', y= 'Chao1', fill = "Site") +
-    scale_fill_manual(values = c("#e46385", "#17becf"),
-                      labels = c("Algarrobo", "Las Cruces")) +
-    ylim(c(0, 25.5)) +
-    theme_bw()
-  A3 <- ggplot(data_alphadiv, aes(x=ocean_depth, y=S.evenness, fill =site)) +
-    geom_boxplot() +
-    labs(title= NULL, x= 'Ocean Depth', y= 'Evenness', fill = "Site") +
-    scale_fill_manual(values = c("#e46385", "#17becf"),
-                      labels = c("Algarrobo", "Las Cruces")) +
-    ylim(c(0, 1.5)) +
-    theme_bw()
-  A4 <- ggplot(data_alphadiv, aes(x=ocean_depth, y=S.shannon, fill =site)) +
-    labs(title= NULL, x= 'Ocean Depth', y= 'Shannon', fill = "Site") +
-    geom_boxplot() +
-    scale_fill_manual(values = c("#e46385", "#17becf"), 
-                      labels = c("Algarrobo", "Las Cruces")) +
-    ylim(c(0, 2)) +
-    theme_bw()
-  
-  
-  return(list(A1 = A1, A2 = A2, A3 = A3, A4 = A4))
-}
-
-plot_anelidos <- graphic_function(anelidos_alphadiv, "Annelida")
-plot_artro <- graphic_function(artro_alphadiv, "Arthropoda")
-plot_bryozoa <- graphic_function(bryozoa_alphadiv, "Bryozoa")
-plot_cnidaria <- graphic_function(cnidaria_alphadiv, "Cnidaria")
-
-plot_div_group_tax <- plot_anelidos$A1 + plot_artro$A1 + plot_bryozoa$A1 + plot_cnidaria$A1 +
-  plot_anelidos$A2 + plot_artro$A2 + plot_bryozoa$A2 + plot_cnidaria$A2 +
-  plot_anelidos$A3 + plot_artro$A3 + plot_bryozoa$A3 + plot_cnidaria$A3 +
-  plot_anelidos$A4 + plot_artro$A4 + plot_bryozoa$A4 + plot_cnidaria$A4 +
-  plot_layout(guides = 'collect', axis_titles = "collect") & 
-  theme(
-    plot.title = element_text(size = 12.5, hjust = 0.5, vjust = 0.5),  # Tamaño del título general
-    axis.title = element_text(size = 12.5),  # Tamaño de los títulos de los ejes
-    legend.title = element_text(size = 13.5), # Tamaño del título de la leyenda
-    legend.text = element_text(size = 11.5),
-    legend.key.size = unit(2, "lines"),
-    axis.text.x = element_text(size = 7.5),   # Tamaño de las etiquetas del eje X
-    axis.text.y = element_text(size = 7.5)) &
-  guides(fill = guide_legend(override.aes = list(size = 6)))# Ajustar el tamaño de los símbolos
-
-#ggsave("Plot_papper/group_tax_alpha_div.png", plot_div_group_tax, width = 10, height = 8)
-
-
-calculate_glm <- function(subset_data_div) {
-  
-  # Richness (Poisson or Negative Binomial regression)
-  # First check for overdispersion
-  glm_obs <- glm(S.obs ~ site * ocean_depth, 
-                 family = poisson(link = "log"), data = subset_data_div)
-  if (summary(glm_obs)$dispersion > 1) {
-    # Overdispersion detected, use Negative Binomial
-    glm_richness <- glm.nb(S.obs ~ site * ocean_depth, data = subset_data_div)
-  } else {
-    glm_richness <- glm_obs
-  }
-  
-  glm_shannon <- glm(S.shannon ~ site * ocean_depth,
-                     family = gaussian(link = identity), data = subset_data_div)
-  
-  glm_evenness <- betareg(S.evenness ~ site * ocean_depth,
-                          data = subset_data_div, link = "logit")
-  
-  if (skewness(subset_data_div$S.chao1) > 1) {
-    # Use Gamma if skewed
-    glm_chao <- glm(S.chao1 ~ site * ocean_depth,
-                    family = Gamma(link = "log"), data = subset_data_div)
-  } else {
-    # Use Gaussian if not skewed
-    glm_chao <- glm(S.chao1 ~ site * ocean_depth,
-                    family = gaussian(link = "identity"), data = subset_data_div)
-  }
-  
-  return(list(glm_obs, glm_shannon, glm_evenness, glm_chao))
-  
-}
-
-glm_anelidos <- calculate_glm(anelidos_alphadiv)
-glm_artro <- calculate_glm(artro_alphadiv)
-glm_bryozoa <- calculate_glm(bryozoa_alphadiv)
-glm_cnidaria <- calculate_glm(cnidaria_alphadiv)
-
-summary(glm_anelidos[[1]])
-summary(glm_anelidos[[2]])
-summary(glm_anelidos[[3]])
-summary(glm_anelidos[[4]])
-summary(glm_artro[[1]])
-summary(glm_artro[[2]])
-summary(glm_artro[[3]])
-summary(glm_artro[[4]])
-summary(glm_bryozoa[[1]])
-summary(glm_bryozoa[[2]])
-summary(glm_bryozoa[[3]])
-summary(glm_bryozoa[[4]])
-summary(glm_cnidaria[[1]])
-summary(glm_cnidaria[[2]])
-summary(glm_cnidaria[[3]])
-summary(glm_cnidaria[[4]])
-
-
-nmds_bray_function <- function(ps_subset, tax_subset) {
-  all_pca <- ordinate(
-    physeq = ps_subset,
-    method = "NMDS",
-    distance = "bray")
-  
-  #pasar resultados a un data frame 
-  all_pca_points <- as.data.frame(all_pca$points)
-  df_subset <- data.frame(sample_data(ps_subset))
-  
-  #agregar variables
-  all_pca_df <- all_pca_points  %>% 
-    mutate(site = df_subset$site, 
-           ocean_depth = df_subset$ocean_depth, 
-           factor = paste(df_subset$site, df_subset$ocean_depth, sep = "_"))
-  
-  
-  nmds_bray <- ggplot(data = all_pca_df,
-                      aes(x = MDS1,
-                          y = MDS2
-                      )) + 
-    stat_ellipse(type = "norm", linetype = 2,
-                 show.legend = FALSE, size = 0.6, alpha = 0.9, aes(color = ocean_depth)) +
-    geom_point(size = 5, aes(shape = site, color = ocean_depth)) +
-    scale_shape_manual(values = c(15, 19), 
-                       labels = c(`Algarrobo` = "Algarrobo", `Las_Cruces` = "Las Cruces")) +
-    scale_color_manual(values = c("#17becf", "#e46385")) +
-    labs(color = "Ocean Depth", shape = "Site", x = "nMDS1", y = "nMDS2", title = tax_subset) +
-    theme_bw() 
-  #test adonis
-  dist_sfs_r <- phyloseq::distance(ps_subset, method = "bray")
-  test <- adonis2(dist_sfs_r ~ (site + ocean_depth + site * ocean_depth),  data = df_subset, permutations = 1e3)
-  test
-  
-  return(list (test = test, plot = nmds_bray))
-  
-}
-
-nmds_anelidos <- nmds_bray_function(anelidos, "Annelida")
-nmds_artro    <- nmds_bray_function(artro, "Arthropoda")
-nmds_bryozoa  <- nmds_bray_function(briozoa, "Bryozoa")
-nmds_cnidaria <- nmds_bray_function(cnidaria, "Cnidaria")
-
-plot_nmds_subset <- nmds_anelidos$plot + nmds_artro$plot + nmds_cnidaria$plot +
-  plot_layout(guides = 'collect', axis_titles = "collect") & 
-  theme(
-    plot.title = element_text(size = 12.5, hjust = 0.5, vjust = 0.5),  # Tamaño del título general
-    axis.title = element_text(size = 12.5),  # Tamaño de los títulos de los ejes
-    legend.title = element_text(size = 13.5), # Tamaño del título de la leyenda
-    legend.text = element_text(size = 11.5),
-    legend.key.size = unit(2, "lines"),
-    axis.text.x = element_text(size = 7.5),   # Tamaño de las etiquetas del eje X
-    axis.text.y = element_text(size = 7.5)) &
-  guides(fill = guide_legend(override.aes = list(size = 6)))# Ajustar el tamaño de los símbolos
-#ggsave("Plot_papper/plot_nmds_bray_subset.png", plot_nmds_subset, width = 8, height = 3)
-
-##PA
-
-anelidos_pa <- subset_taxa(r_ps_oc_pa, Phylum == "Annelida")
-artro_pa    <- subset_taxa(r_ps_oc_pa, Phylum == "Arthropoda")
-briozoa_pa  <- subset_taxa(r_ps_oc_pa, Phylum == "Bryozoa")
-cnidaria_pa <- subset_taxa(r_ps_oc_pa, Phylum == "Cnidaria")
-
-nmds_jaccard_function <- function(ps_subset_pa, tax_subset) {
-  all_pca <- ordinate(
-    physeq = ps_subset_pa,
-    method = "NMDS",
-    distance = "jaccard")
-  
-  #pasar resultados a un data frame 
-  all_pca_points <- as.data.frame(all_pca$points)
-  df_subset <- data.frame(sample_data(ps_subset_pa))
-  
-  #agregar variables
-  all_pca_df <- all_pca_points  %>% 
-    mutate(site = df_subset$site, 
-           ocean_depth = df_subset$ocean_depth, 
-           factor = paste(df_subset$site, df_subset$ocean_depth, sep = "_"))
-  
-  
-  nmds_jaccard <- ggplot(data = all_pca_df,
-                         aes(x = MDS1,
-                             y = MDS2
-                         )) + 
-    stat_ellipse(type = "norm", linetype = 2,
-                 show.legend = FALSE, size = 0.6, alpha = 0.9, aes(color = ocean_depth)) +
-    geom_point(size = 5, aes(shape = site, color = ocean_depth)) +
-    scale_shape_manual(values = c(15, 19), 
-                       labels = c(`Algarrobo` = "Algarrobo", `Las_Cruces` = "Las Cruces")) +
-    scale_color_manual(values = c("#17becf", "#e46385")) +
-    labs(color = "Ocean Depth", shape = "Site", x = "nMDS1", y = "nMDS2", title = tax_subset) +
-    theme_bw()
-  
-  #test adonis
-  dist_sfs_r <- phyloseq::distance(ps_subset, method = "jaccard")
-  test <- adonis2(dist_sfs_r ~ (site + ocean_depth + site * ocean_depth),  data = df_subset, permutations = 1e3)
-  test
-  
-  return(list (test = test, plot = nmds_jaccard))
-  
-}
-
-
-nmds_anelidos_pa <- nmds_bray_function(anelidos_pa, "Annelida")
-nmds_artro_pa    <- nmds_bray_function(artro_pa, "Arthropoda")
-nmds_bryozoa_pa  <- nmds_bray_function(briozoa_pa, "Bryozoa")
-nmds_cnidaria_pa <- nmds_bray_function(cnidaria_pa, "Cnidaria")
-
-plot_nmds_subset_pa <- nmds_anelidos_pa$plot + nmds_artro_pa$plot + nmds_cnidaria_pa$plot +
-  plot_layout(guides = 'collect', axis_titles = "collect") & 
-  theme(
-    plot.title = element_text(size = 12.5, hjust = 0.5, vjust = 0.5),  # Tamaño del título general
-    axis.title = element_text(size = 12.5),  # Tamaño de los títulos de los ejes
-    legend.title = element_text(size = 13.5), # Tamaño del título de la leyenda
-    legend.text = element_text(size = 11.5),
-    legend.key.size = unit(2, "lines"),
-    axis.text.x = element_text(size = 7.5),   # Tamaño de las etiquetas del eje X
-    axis.text.y = element_text(size = 7.5)) &
-  guides(fill = guide_legend(override.aes = list(size = 6)))# Ajustar el tamaño de los símbolos
-#ggsave("Plot_papper/plot_nmds_jaccard_subset.png", plot_nmds_subset_pa, width = 8, height = 3)
-
-
-
