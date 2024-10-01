@@ -22,46 +22,6 @@ library(e1071)
 #library(ape)
 
 
-#FUNCTIONS obj phyloseq----------------
-#create a phyloseq compatible otu table format
-#Args:
-#>file_otu (in the rows the ASVs and in the columns the samples)
-#
-#Returns:
-#>OTU table
-otu <- function(file_otu) {
-  otus <- as.matrix(file_otu)
-  otus_format <- otu_table(otus, taxa_are_rows = TRUE)
-  return(otus_format)
-}
-
-
-#create a phyloseq compatible taxonomy table format
-#Args:
-#>file_taxa (in the rows the ASVs and in the columns the taxonomic levels)
-#
-#Returns:
-#>Taxonomy table
-taxa <- function(file_taxa) {
-  taxas <- (as.matrix(file_taxa))
-  taxa_format <- (tax_table(taxas))
-  return(taxa_format)
-}
-
-
-#create a phyloseq compatible samplee data format
-#Args:
-#>file_data (in the rows the samples and in the columns the variables)
-#
-#Returns:
-#>Sample table (sample information)
-data <- function(file_df) {
-  df <- data.frame(file_df)
-  df_format <- sample_data(df)
-  return(df_format)
-}
-
-
 #Directory ----------------
 setwd("C:/Users/javie/Documents/Scripts/agua_arms/agua_arms")
 
@@ -79,9 +39,16 @@ mutate(factor =  paste(site, ocean_depth, sep = "_")) %>%
 mutate(factor_r =  paste(site, ocean_depth, replica, sep = "_"))
 
 #Create object phylseq-----------------
-otu_ps <- otu(asv_1)
-tax_ps <- taxa(tax_1)
-data_ps <- data(df)
+
+otu <- as.matrix(asv_1)
+otu_ps <- otu_table(otu, taxa_are_rows = TRUE)
+
+taxa <- as.matrix(tax_1)
+tax_ps <- tax_table(taxa)
+
+df <- data.frame(df)
+data_ps <- sample_data(df)
+
 ps <- phyloseq(otu_ps, tax_ps, data_ps)
 ps <- subset_samples(ps, study == "arms")
 
