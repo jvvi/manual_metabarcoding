@@ -156,6 +156,23 @@ r_ps_LC30 <- subset_samples(r_ps_oc, factor == "Las_Cruces_30m")
 r_ps_LC60 <- subset_samples(r_ps_oc, factor == "Las_Cruces_60m")
 
 taxonomic_level <- "Specie"
+
+#agrupar por tax and clean tax con reads = 0
+#Args:
+#>object phyloseq (pa or not)
+#>taxonoic level (remember that this has the same name as the taxonomy table)
+#default
+#>NArm = FALSE
+#
+#Returns:
+#>object phyloseq whit reads > 0 in the specified taxonomic level
+clean_zero_reads <- function(ps, taxonomic_level) {
+  tax_glom_ps <- tax_glom(ps, taxonomic_level, NArm = FALSE) #agrupa por taxonomic leves eg. genus #nolint
+  clean_zero_ps <- prune_taxa(taxa_sums(tax_glom_ps) > 0,
+                              tax_glom_ps) #remove taxonommic_level=0
+  return(clean_zero_ps)
+}
+
 r_ps_AL30 <- clean_zero_reads(r_ps_AL30, taxonomic_level)
 r_ps_AL60 <- clean_zero_reads(r_ps_AL60, taxonomic_level)
 r_ps_LC30 <- clean_zero_reads(r_ps_LC30, taxonomic_level)
