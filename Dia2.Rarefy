@@ -1,0 +1,125 @@
+# MERGE fraction sample ---------------------
+ps_sfs <- merge_samples(ps, group = "factor_r")
+df_sfs <- data.frame(sample_data(ps_sfs))
+df_sfs <- df_sfs  %>%
+  mutate(study = rep("arms", nrow(.)),
+         site = rep(c("Algarrobo", "Las_Cruces"), each = 8 ),
+         ocean_depth= rep(c("30m", "60m"), each = 4, 2),
+         factor = paste(site, ocean_depth, sep = "_"),
+         factor_r = paste(site, ocean_depth, replica, sep = "_")) %>%
+  dplyr::select(study, site, ocean_depth, factor, factor_r)
+sample_data(ps_sfs) <- df_sfs
+
+ps_sfs@refseq <- Biostrings::DNAStringSet(asv_sequences)
+otu_table(ps_sfs) <- t(otu_table(ps_sfs))
+
+ps_sfs <- clean_zero_reads(ps_sfs, "Specie")
+
+
+#RAREFY--------------------------------------
+sample_sums <- sample_sums(ps_sfs) #nolint
+which.min(sample_sums)
+r_ps_sfs <- rarefaction(ps_sfs)
+
+##CURVAS DE RAREFACCION--------------------------------
+
+calculate_rarefaction_curves2 <- function(psdata, measures, depths) {
+  require("plyr") # ldply
+  require("reshape2") # melt
+  
+  estimate_rarified_richness <- function(psdata, measures, depth) {
+    if(max(sample_sums(psdata)) < depth) return()
+    psdata <- prune_samples(sample_sums(psdata) >= depth, psdata)
+    
+    rarified_psdata <- rarefy_even_depth(psdata, depth, verbose = FALSE)
+    
+    alpha_diversity <- estimate_richness(rarified_psdata, measures = measures)
+    
+    # Calcular equitabilidad (evenness)
+    evenness_values <- diversity(t(rarified_psdata@otu_table)) / log(specnumber(t(rarified_psdata@otu_table)))
+    
+    # Añadir la equitabilidad a los resultados
+    evenness_df <- data.frame(Sample = rownames(alpha_diversity), Evenness = evenness_values)
+    alpha_diversity <- cbind(alpha_diversity, Evenness = evenness_values)
+    
+    # Convertir los resultados a formato largo (melted)
+    molten_alpha_diversity <- melt(as.matrix(alpha_diversity),
+                                   varnames = c('Sample', 'Measure'),
+                                   value.name = 'Alpha_diversity')
+    
+    molten_alpha_diversity
+  }
+  
+  names(depths) <- depths # Esto habilita la adición automática de la profundidad al output por ldply
+  rarefaction_curve_data <- ldply(depths, estimate_rarified_richness, psdata = psdata, measures = measures, .id = 'Depth', .progress = ifelse(interactive(), 'text', 'none'))
+  
+  # Convertir Depth de factor a numérico
+  rarefaction_curve_data$Depth <- as.numeric(levels(rarefaction_curve_data$Depth))[rarefaction_curve_data$Depth]
+  
+  rarefaction_curve_data
+}
+
+# Resumen de los resultados obtenidos en las curvas de rarefacción
+curve_summary_verbose <- function(rarefied_ps, r_curve_data) {
+  r_curve_data_summary <- ddply(r_curve_data,
+                                c("Depth", "Sample", "Measure"),
+                                summarise,
+                                Alpha_diversity_mean = mean(Alpha_diversity), #nolint
+                                Alpha_diversity_sd = sd(Alpha_diversity)) #nolint
+  r_curve_data_summary_verbose <- merge(r_curve_data_summary,
+                                        data.frame(sample_data(rarefied_ps)),
+                                        by.x = "Sample", by.y = "row.names")
+  return(r_curve_data_summary_verbose)
+}
+
+
+r_curve2 <- calculate_rarefaction_curves2(r_ps_sfs,
+                                        c("Observed", "Shannon", "Chao1", "Evenness"),
+                                        rep(c(1:150 * 100), each = 5))
+
+# Data summary curve rarefy
+r_curve_summary <- curve_summary_verbose(r_ps_sfs, r_curve2)
+
+
+##plot y:reads x:sample, agglomerated by taxonomic level----
+a <- ggplot(data = data.frame(x = 1:length(sample_sums(ps_sfs)), #nolint
+                              y = sort(sample_sums(ps_sfs), decreasing = TRUE)), #nolint
+            aes(x = x, y = y)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(title = " Reads for Sample",
+       x = "Samples",
+       y = "Reads")
+a
+#plot whit sample rarefy
+b <- ggplot(data = data.frame(x = 1:length(sample_sums(r_ps_sfs)), #nolint
+                              y = sort(sample_sums(r_ps_sfs), decreasing = TRUE)),
+            aes(x = x, y = y)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(title = "Rarefy",
+       x = "Samples",
+       y = "Reads")
+b
+plot_rarefy <- a | b
+#ggsave ("Plot_papper/reads_rarefy.png", plot_rarefy)
+
+#plot whit alpha diversity obs and shannon
+c <- r_curve_summary  %>% 
+  filter(Measure != "se.chao1")  %>% 
+  ggplot( aes(
+              x = Depth, #nolint
+              y = Alpha_diversity_mean, #nolint
+              ymin = Alpha_diversity_mean - Alpha_diversity_sd, #nolint
+              ymax = Alpha_diversity_mean + Alpha_diversity_sd, #nolint
+              colour = as.factor(factor), #nolint
+              group = Sample)) + #nolint
+  geom_line(linewidth = 0.2, linetype = "solid") +
+  facet_wrap(facets = ~ Measure, scales = "free_y") +
+  labs(x = "Reads",
+       y = "Alpha diversity mean") +
+  scale_colour_manual(values = c("#e46385", "#17becf", "#8263e4", "#c5e465"), 
+                    labels = c("Algarrobo 30m", "Algarrobo 60m", "Las Cruces 30m", "Las Cruces 60m")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5), 
+        legend.title = element_blank())
+c
+#ggsave("plot_papper/rarefaction_curve.png", c, width = 8, height = 4)
