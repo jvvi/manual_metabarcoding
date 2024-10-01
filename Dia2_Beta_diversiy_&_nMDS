@@ -1,3 +1,24 @@
+#ELEGIR PS A OCUPAR-------------------
+r_ps_oc <- r_ps_sfs
+
+#PRESENCIA Y AUSENCIA-----------
+#presence absence of the objeto phyloseq
+#Args:
+#>phyloseq objectrarefy or not
+#
+#Return:
+#>phyloseq object whit presence and absence
+normalize_pa_ps <- function(ps) {
+  comm <- as(phyloseq::otu_table(ps), Class = "matrix")
+  comm <- vegan::decostand(comm, method = "pa", MARGIN = 1)
+  ps_pa <- ps
+  trows <- phyloseq::taxa_are_rows(ps)
+  phyloseq::otu_table(ps_pa) <- phyloseq::otu_table(comm, taxa_are_rows = trows)
+  return(ps_pa)
+}
+
+r_ps_oc_pa <- normalize_pa_ps(r_ps_oc)
+
 #NMSD--------------------
 #ordination
 set.seed(1)
