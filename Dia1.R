@@ -23,13 +23,10 @@ library(e1071)
 
 
 #Directory ----------------
-setwd("C:/Users/javie/Documents/Scripts/agua_arms/agua_arms")
-
-project_path <- "C:/Users/javie/Documents/Scripts/agua_arms/agua_arms"
-project_path
+setwd("C:/Users/javie/OneDrive - Universidad Católica de Chile/ayudantía/Genómica de la conservación")
 
 #open files------------------
-asv_1 <- read.table("asv_table.txt", header = TRUE, sep = "\t", row.names = 1)
+asv_1 <- read.table("otu_table.txt", header = TRUE, sep = "\t", row.names = 1)
 tax_1 <- read.table("tax_table.txt", header = TRUE, sep = "\t", row.names = 1)
 tax_1[tax_1 == ""] <- "Unassigned"
 df <- read.table("df_table.txt", header = TRUE, sep = "\t", row.names = 1)
