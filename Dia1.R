@@ -169,7 +169,7 @@ ps_sfs <- merge_samples(ps, group = "factor_r")
 df_sfs <- data.frame(sample_data(ps_sfs))
 df_sfs <- df_sfs  %>%
   mutate(study = rep("arms", nrow(.)),
-         site = rep(c("Algarrobo", "Las_Cruces"), each = 8 ),
+         site = rep("Algarrobo",8 ),
          ocean_depth= rep(c("30m", "60m"), each = 4, 2),
          factor = paste(site, ocean_depth, sep = "_"),
          factor_r = paste(site, ocean_depth, replica, sep = "_")) %>%
