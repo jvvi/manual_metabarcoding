@@ -179,7 +179,6 @@ df_sfs <- df_sfs  %>%
   dplyr::select(study, site, ocean_depth, factor, factor_r)
 sample_data(ps_sfs) <- df_sfs
 
-ps_sfs@refseq <- Biostrings::DNAStringSet(asv_sequences)
 otu_table(ps_sfs) <- t(otu_table(ps_sfs))
 
 ps_sfs <- clean_zero_reads(ps_sfs, "Specie")
