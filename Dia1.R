@@ -170,7 +170,7 @@ df_sfs <- data.frame(sample_data(ps_sfs))
 df_sfs <- df_sfs  %>%
   mutate(study = rep("arms", nrow(.)),
          site = rep("Algarrobo",8 ),
-         ocean_depth= rep(c("30m", "60m"), each = 4, 2),
+         ocean_depth= rep(c("30m", "60m"), each = 2, 2),
          factor = paste(site, ocean_depth, sep = "_"),
          factor_r = paste(site, ocean_depth, replica, sep = "_")) %>%
   dplyr::select(study, site, ocean_depth, factor, factor_r)
@@ -299,8 +299,8 @@ c <- r_curve_summary  %>%
   facet_wrap(facets = ~ Measure, scales = "free_y") +
   labs(x = "Reads",
        y = "Alpha diversity mean") +
-  scale_colour_manual(values = c("#e46385", "#17becf", "#8263e4", "#c5e465"), 
-                    labels = c("Algarrobo 30m", "Algarrobo 60m") +
+  scale_colour_manual(values = c("#17becf", "#8263e4"), 
+                    labels = c("Algarrobo 30m", "Algarrobo 60m")) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5), 
         legend.title = element_blank())
