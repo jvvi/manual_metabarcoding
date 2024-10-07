@@ -185,6 +185,24 @@ ps_sfs <- clean_zero_reads(ps_sfs, "Specie")
 
 
 #RAREFY--------------------------------------
+#rarefaction
+#Args:
+#>phyloseq object without reads=0 (reuturn fnction clean_zero_reads)
+#Default: sample size is the min number reads in the otu table
+#
+#Returns:
+#>Object phyloseq rarefy
+rarefaction <- function(clean_zero_ps) {
+  sample_sums <- sample_sums(clean_zero_ps) #nolint
+  min_reads_sample <- which.min(sample_sums) #nolint
+  min_reads <- sample_sums[min_reads_sample] #nolint
+  min_reads <- as.numeric(min_reads) #nolint
+  rarefied_ps <- rarefy_even_depth(clean_zero_ps,
+                                   sample.size = min_reads,
+                                   replace = TRUE)
+  return(rarefied_ps)
+}
+
 sample_sums <- sample_sums(ps_sfs) #nolint
 which.min(sample_sums)
 r_ps_sfs <- rarefaction(ps_sfs)
