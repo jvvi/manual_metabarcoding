@@ -303,7 +303,7 @@ c <- r_curve_summary  %>%
   labs(x = "Reads",
        y = "Alpha diversity mean") +
   scale_colour_manual(values = c("#e46385", "#17becf", "#8263e4", "#c5e465"), 
-                    labels = c("Algarrobo 30m", "Algarrobo 60m", "Las Cruces 30m", "Las Cruces 60m")) +
+                    labels = c("Algarrobo 30m", "Algarrobo 60m") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5), 
         legend.title = element_blank())
